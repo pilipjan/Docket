@@ -193,6 +193,11 @@
 
   <section class="card" id="excelCard" style="opacity:0.5; pointer-events:none;">
     <h2>3 · Checklist Excel <span class="badge" id="excelBadge">waiting</span></h2>
+    <div id="rememberedExcelRow" style="display:none; margin-bottom:10px; padding:10px 12px; background:#f0f5f3; border:1px solid var(--tab); border-radius:5px; font-size:0.82rem; display:none; align-items:center; gap:10px;">
+      <span style="flex:1;">📄 <strong id="rememberedExcelName"></strong><br><span style="color:var(--muted); font-size:0.75rem;">Remembered template — click to use</span></span>
+      <button class="ghost rowbtn" id="useRememberedBtn">Use this</button>
+      <button class="ghost rowbtn" id="forgetExcelBtn" style="color:var(--muted);">Forget</button>
+    </div>
     <div class="dropzone" id="excelDrop">Drag your checklist Excel file here, or use the button below</div>
     <input type="file" id="excelInput" accept=".xlsx,.xls,.xlsm" style="display:none">
     <button class="ghost" id="excelBrowseBtn">Browse for Excel file</button>
@@ -330,6 +335,7 @@ function docName(type, ext){
 });
 document.getElementById('includeDate').addEventListener('change', refreshFields);
 refreshFields();
+checkRememberedExcel();
 
 document.getElementById('resetBtn').addEventListener('click', ()=>{
   if(docQueue.length > 0 && !confirm('Start a new policy? This clears the insured, policy #, folder, and document list on screen (period/LOB stay as-is; saved files on disk are untouched).')) return;
@@ -381,6 +387,7 @@ document.getElementById('pickFolderBtn').addEventListener('click', async ()=>{
     document.getElementById('folderStatus').innerHTML = `Folder ready: <strong>${tag}</strong>`;
     document.getElementById('excelCard').style.opacity = '1';
     document.getElementById('excelCard').style.pointerEvents = 'auto';
+    checkRememberedExcel();
     document.getElementById('docsCard').style.opacity = '1';
     document.getElementById('docsCard').style.pointerEvents = 'auto';
     document.getElementById('noteCard').style.opacity = '1';
@@ -419,6 +426,80 @@ async function saveFileAs(file, newName){
   }
 }
 
+// --- IndexedDB for remembered Excel template ---
+const IDB_NAME = 'docket', IDB_STORE = 'handles', IDB_KEY = 'excelTemplate';
+
+function openDB(){
+  return new Promise((res,rej)=>{
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE);
+    req.onsuccess = e => res(e.target.result);
+    req.onerror = e => rej(e.target.error);
+  });
+}
+
+async function saveExcelHandle(handle){
+  const db = await openDB();
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).put({handle, name: handle.name}, IDB_KEY);
+    tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+  });
+}
+
+async function loadExcelHandle(){
+  const db = await openDB();
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(IDB_STORE,'readonly');
+    const req = tx.objectStore(IDB_STORE).get(IDB_KEY);
+    req.onsuccess = e => res(e.target.result || null);
+    req.onerror = e => rej(e.target.error);
+  });
+}
+
+async function forgetExcelHandle(){
+  const db = await openDB();
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).delete(IDB_KEY);
+    tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+  });
+}
+
+async function checkRememberedExcel(){
+  try{
+    const saved = await loadExcelHandle();
+    const row = document.getElementById('rememberedExcelRow');
+    if(saved){
+      document.getElementById('rememberedExcelName').textContent = saved.name;
+      row.style.display = 'flex';
+    } else {
+      row.style.display = 'none';
+    }
+  }catch(e){ /* IDB unavailable */ }
+}
+
+document.getElementById('useRememberedBtn').addEventListener('click', async ()=>{
+  try{
+    const saved = await loadExcelHandle();
+    if(!saved){ return; }
+    const perm = await saved.handle.requestPermission({mode:'read'});
+    if(perm !== 'granted'){ logMsg('Permission not granted for remembered file', true); return; }
+    const file = await saved.handle.getFile();
+    await handleExcel(file);
+    // also save updated handle in case it refreshed
+    await saveExcelHandle(saved.handle);
+  }catch(e){
+    logMsg('Could not use remembered template: ' + e.message, true);
+  }
+});
+
+document.getElementById('forgetExcelBtn').addEventListener('click', async ()=>{
+  await forgetExcelHandle();
+  document.getElementById('rememberedExcelRow').style.display = 'none';
+  logMsg('Remembered Excel template cleared');
+});
+
 // --- Excel handling ---
 function extOf(filename){
   const m = filename.match(/\.[^.]+$/);
@@ -440,7 +521,25 @@ async function handleExcel(file){
   }
 }
 
-document.getElementById('excelBrowseBtn').addEventListener('click', ()=> document.getElementById('excelInput').click());
+document.getElementById('excelBrowseBtn').addEventListener('click', async ()=>{
+  if(window.showOpenFilePicker){
+    try{
+      const [fh] = await window.showOpenFilePicker({
+        types:[{description:'Excel files', accept:{'application/vnd.ms-excel':['.xlsx','.xls','.xlsm']}}],
+        multiple: false
+      });
+      await saveExcelHandle(fh);
+      document.getElementById('rememberedExcelName').textContent = fh.name;
+      document.getElementById('rememberedExcelRow').style.display = 'flex';
+      const file = await fh.getFile();
+      await handleExcel(file);
+    }catch(e){
+      if(e.name !== 'AbortError') logMsg('Could not open Excel file: ' + e.message, true);
+    }
+  } else {
+    document.getElementById('excelInput').click();
+  }
+});
 document.getElementById('excelInput').addEventListener('change', e=>{
   if(e.target.files[0]) handleExcel(e.target.files[0]);
 });
