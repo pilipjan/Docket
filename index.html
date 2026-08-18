@@ -182,6 +182,7 @@
       <div class="field">
         <label for="lob">Line of business</label>
         <select id="lob">
+          <option value="" disabled selected>— Select LOB —</option>
           <option>General Liability</option>
           <option>Professional</option>
           <option>Workers Compensation</option>
@@ -359,7 +360,7 @@ function refreshFields(){
   const tag = jobTag();
   document.getElementById('tagPreview').textContent = tag || 'Fill in the fields above…';
   document.getElementById('lobBannerText').textContent = lob + (insured ? ` — ${insured}` : '');
-  const lobColor = LOB_COLORS[lob] || 'var(--tab)';
+  const lobColor = lob ? (LOB_COLORS[lob] || 'var(--tab)') : '#9ca3af';
   document.getElementById('lobBanner').style.background = lobColor;
   const lobSelect = document.getElementById('lob');
   lobSelect.style.background = lobColor;
@@ -406,7 +407,7 @@ function renderManualNames(){
   const tag = jobTag();
   jobTagEl.textContent = tag || 'Fill in the fields above…';
   jobTagRow.classList.toggle('dim', !tag);
-  const hasBasics = insured && policyNum;
+  const hasBasics = insured && policyNum && lob;
   const excelN = hasBasics ? excelName('.xlsx') : 'Fill in the fields above…';
   excelEl.textContent = excelN;
   excelRow.classList.toggle('dim', !hasBasics);
@@ -466,7 +467,7 @@ function sanitize(name){
 }
 
 function jobTag(){
-  if(!insured || !policyNum) return '';
+  if(!insured || !policyNum || !lob) return '';
   const d = dateStr ? ` - ${dateStr}` : '';
   return sanitize(`${policyType} - ${period} - ${lob} - ${insured} - ${policyNum}${d}`);
 }
@@ -524,7 +525,7 @@ if(!window.showDirectoryPicker){
 document.getElementById('pickFolderBtn').addEventListener('click', async ()=>{
   refreshFields();
   const tag = jobTag();
-  if(!tag){ alert('Fill in Insured Name and Policy Number first.'); return; }
+  if(!tag){ alert('Fill in Insured Name, Policy Number, and Line of Business first.'); return; }
   const confirmMsg = `Please confirm before creating the folder:\n\n`
     + `Policy type: ${policyType}\n`
     + `Insured: ${insured}\n`
