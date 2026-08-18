@@ -174,6 +174,11 @@
         <input type="text" id="insured" placeholder="e.g. Acme Corp">
         <span style="font-size:0.72rem; color:var(--accent); font-weight:600;">Pull this from the Applicant section — not Account Details.</span>
       </div>
+      <div class="field full" style="flex-direction:row; align-items:center; gap:10px; margin-top:4px;">
+        <input type="checkbox" id="includeDate" style="width:16px; height:16px; cursor:pointer; accent-color:var(--tab);">
+        <label for="includeDate" style="font-size:0.82rem; color:var(--ink); font-weight:400; cursor:pointer;">Include today's date in folder, checklist, and document names</label>
+        <span id="dateSuffix" style="font-size:0.78rem; color:var(--muted); margin-left:auto;"></span>
+      </div>
     </div>
     <div class="tagpreview" id="tagPreview">Job tag will appear here…</div>
     <button class="ghost" id="resetBtn" style="margin-top:14px;">Start next policy (reset form)</button>
@@ -230,7 +235,15 @@
 
 <script>
 let dirHandle = null;
-let insured = '', period = '', prevPeriod = '', lob = '', policyNum = '', policyType = '';
+let insured = '', period = '', prevPeriod = '', lob = '', policyNum = '', policyType = '', dateStr = '';
+
+function todayStr(){
+  const d = new Date();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  const yy = String(d.getFullYear());
+  return `${mm}-${dd}-${yy}`;
+}
 const docQueue = []; // {file, type, status}
 
 const DOC_TYPES = ['Current','Previous','Application','Quote','Proposal','Binder'];
@@ -252,6 +265,10 @@ function refreshFields(){
   lob = document.getElementById('lob').value;
   insured = document.getElementById('insured').value.trim();
   policyNum = document.getElementById('policyNum').value.trim();
+  const useDate = document.getElementById('includeDate').checked;
+  dateStr = useDate ? todayStr() : '';
+  const dateSuffix = document.getElementById('dateSuffix');
+  dateSuffix.textContent = useDate ? `Date: ${dateStr}` : '';
   const tag = jobTag();
   document.getElementById('tagPreview').textContent = tag || 'Fill in the fields above…';
   document.getElementById('lobBannerText').textContent = lob + (insured ? ` — ${insured}` : '');
@@ -288,22 +305,26 @@ function sanitize(name){
 
 function jobTag(){
   if(!insured || !policyNum) return '';
-  return sanitize(`${policyType} - ${period} - ${lob} - ${insured} - ${policyNum}`);
+  const d = dateStr ? ` - ${dateStr}` : '';
+  return sanitize(`${policyType} - ${period} - ${lob} - ${insured} - ${policyNum}${d}`);
 }
 
 function excelName(ext){
-  return sanitize(`${period} (${lob}) Policy Checklist - ${insured}`) + ext;
+  const d = dateStr ? ` - ${dateStr}` : '';
+  return sanitize(`${period} (${lob}) Policy Checklist - ${insured}${d}`) + ext;
 }
 
 function docName(type, ext){
   const label = type === 'Previous' ? `(${prevPeriod})Previous` : type;
-  return sanitize(`${period} - ${lob} - ${label} - ${insured}`) + ext;
+  const d = dateStr ? ` - ${dateStr}` : '';
+  return sanitize(`${period} - ${lob} - ${label} - ${insured}${d}`) + ext;
 }
 
 ['policyType','period','prevPeriod','lob','insured','policyNum'].forEach(id=>{
   document.getElementById(id).addEventListener('input', refreshFields);
   document.getElementById(id).addEventListener('change', refreshFields);
 });
+document.getElementById('includeDate').addEventListener('change', refreshFields);
 refreshFields();
 
 document.getElementById('resetBtn').addEventListener('click', ()=>{
@@ -489,10 +510,18 @@ document.getElementById('genAvailNoteBtn').addEventListener('click', ()=>{
     preview.textContent = 'No documents have been saved yet — save at least one before generating a note.';
   } else {
     const missing = DOC_TYPES.filter(t => !savedTypes.includes(t));
-    let text = `Please note that only the following documents were available and have been attached: ${listWithAnd(savedTypes)}.`;
-    if(missing.length > 0){
-      text += ` ${listWithAnd(missing)} ${missing.length === 1 ? 'was' : 'were'} not available.`;
+    // Format saved list with & before last item (matching real note style)
+    function joinList(arr){
+      if(arr.length === 0) return '';
+      if(arr.length === 1) return arr[0];
+      if(arr.length === 2) return arr[0] + ' & ' + arr[1];
+      return arr.slice(0,-1).join(', ') + ' & ' + arr[arr.length-1];
     }
+    let text = `Please note that I was only able to pull up ${joinList(savedTypes)} from the Attachments.`;
+    if(missing.length > 0){
+      text += ` No ${joinList(missing)}.`;
+    }
+    text += ` Please advise if you have other documents available.`;
     preview.textContent = text;
   }
   preview.style.display = 'block';
