@@ -139,6 +139,13 @@
     <h2>1 · Policy details</h2>
     <div class="grid">
       <div class="field">
+        <label for="policyType">Policy type</label>
+        <select id="policyType">
+          <option>Renewal</option>
+          <option>Rewritten</option>
+        </select>
+      </div>
+      <div class="field">
         <label for="period">Policy period</label>
         <input type="text" id="period" value="26-27">
       </div>
@@ -165,6 +172,7 @@
       <div class="field full">
         <label for="insured">Name of insured</label>
         <input type="text" id="insured" placeholder="e.g. Acme Corp">
+        <span style="font-size:0.72rem; color:var(--accent); font-weight:600;">Pull this from the Applicant section — not Account Details.</span>
       </div>
     </div>
     <div class="tagpreview" id="tagPreview">Job tag will appear here…</div>
@@ -222,7 +230,7 @@
 
 <script>
 let dirHandle = null;
-let insured = '', period = '', prevPeriod = '', lob = '', policyNum = '';
+let insured = '', period = '', prevPeriod = '', lob = '', policyNum = '', policyType = '';
 const docQueue = []; // {file, type, status}
 
 const DOC_TYPES = ['Current','Previous','Application','Quote','Proposal','Binder'];
@@ -238,6 +246,7 @@ function logMsg(msg, isErr){
 function lobShort(){ return document.getElementById('lob').value; }
 
 function refreshFields(){
+  policyType = document.getElementById('policyType').value;
   period = document.getElementById('period').value.trim();
   prevPeriod = document.getElementById('prevPeriod').value.trim();
   lob = document.getElementById('lob').value;
@@ -279,7 +288,7 @@ function sanitize(name){
 
 function jobTag(){
   if(!insured || !policyNum) return '';
-  return sanitize(`${period} - ${lob} - ${insured} - ${policyNum}`);
+  return sanitize(`${policyType} - ${period} - ${lob} - ${insured} - ${policyNum}`);
 }
 
 function excelName(ext){
@@ -291,7 +300,7 @@ function docName(type, ext){
   return sanitize(`${period} - ${lob} - ${label} - ${insured}`) + ext;
 }
 
-['period','prevPeriod','lob','insured','policyNum'].forEach(id=>{
+['policyType','period','prevPeriod','lob','insured','policyNum'].forEach(id=>{
   document.getElementById(id).addEventListener('input', refreshFields);
   document.getElementById(id).addEventListener('change', refreshFields);
 });
@@ -301,6 +310,7 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
   if(docQueue.length > 0 && !confirm('Start a new policy? This clears the insured, policy #, folder, and document list on screen (period/LOB stay as-is; saved files on disk are untouched).')) return;
   document.getElementById('insured').value = '';
   document.getElementById('policyNum').value = '';
+  document.getElementById('policyType').value = 'Renewal';
   document.getElementById('excelBadge').textContent = 'waiting';
   document.getElementById('excelResult').textContent = '';
   dirHandle = null;
@@ -331,6 +341,15 @@ document.getElementById('pickFolderBtn').addEventListener('click', async ()=>{
   refreshFields();
   const tag = jobTag();
   if(!tag){ alert('Fill in Insured Name and Policy Number first.'); return; }
+  const confirmMsg = `Please confirm before creating the folder:\n\n`
+    + `Policy type: ${policyType}\n`
+    + `Insured: ${insured}\n`
+    + `Policy #: ${policyNum}\n`
+    + `Period: ${period}\n`
+    + `LOB: ${lob}\n\n`
+    + `Double-check the insured name came from the Applicant section, not Account Details.\n\n`
+    + `Create folder "${tag}"?`;
+  if(!confirm(confirmMsg)) return;
   try{
     const parent = await window.showDirectoryPicker();
     dirHandle = await parent.getDirectoryHandle(tag, {create:true});
