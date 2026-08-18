@@ -360,13 +360,21 @@ function refreshFields(){
   const tag = jobTag();
   document.getElementById('tagPreview').textContent = tag || 'Fill in the fields above…';
   document.getElementById('lobBannerText').textContent = lob + (insured ? ` — ${insured}` : '');
-  const lobColor = lob ? (LOB_COLORS[lob] || 'var(--tab)') : '#9ca3af';
-  document.getElementById('lobBanner').style.background = lobColor;
   const lobSelect = document.getElementById('lob');
-  lobSelect.style.background = lobColor;
-  lobSelect.style.color = '#fff';
-  lobSelect.style.fontWeight = '700';
-  lobSelect.style.borderColor = lobColor;
+  if(lob){
+    const lobColor = LOB_COLORS[lob] || 'var(--tab)';
+    document.getElementById('lobBanner').style.background = lobColor;
+    lobSelect.style.background = lobColor;
+    lobSelect.style.color = '#fff';
+    lobSelect.style.fontWeight = '700';
+    lobSelect.style.border = `1px solid ${lobColor}`;
+  } else {
+    document.getElementById('lobBanner').style.background = '#9ca3af';
+    lobSelect.style.background = '#fff';
+    lobSelect.style.color = 'var(--accent)';
+    lobSelect.style.fontWeight = '700';
+    lobSelect.style.border = `2px solid var(--accent)`;
+  }
   try{
     localStorage.setItem('policyFiler.period', period);
     localStorage.setItem('policyFiler.prevPeriod', prevPeriod);
