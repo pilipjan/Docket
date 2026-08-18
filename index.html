@@ -471,7 +471,7 @@ function jobTag(){
 
 function excelName(ext){
   const d = dateStr ? ` - ${dateStr}` : '';
-  return sanitize(`${period} (${lob}) Policy Checklist - ${insured}${d}`) + ext;
+  return sanitize(`${period} ${lob} Policy Checklist - ${insured}${d}`) + ext;
 }
 
 function docName(type, ext){
