@@ -480,9 +480,14 @@ function jobTag(){
   return sanitize(`${policyType} - ${period} - ${lob} - ${insured} - ${policyNum}${d}`);
 }
 
+const LOB_CHECKLIST_ABBR = {
+  'Workers Compensation': 'WC'
+};
+
 function excelName(ext){
   const d = dateStr ? ` - ${dateStr}` : '';
-  return sanitize(`${period} ${lob} Policy Checklist - ${insured}${d}`) + ext;
+  const checklistLob = LOB_CHECKLIST_ABBR[lob] || lob;
+  return sanitize(`${period} ${checklistLob} Policy Checklist - ${insured}${d}`) + ext;
 }
 
 function docName(type, ext){
