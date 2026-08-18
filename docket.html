@@ -886,7 +886,8 @@ document.getElementById('genAttachNoteBtn').addEventListener('click', ()=>{
   refreshFields();
   const preview = document.getElementById('attachNotePreview');
   const copyBtn = document.getElementById('copyAttachNoteBtn');
-  preview.textContent = `Please see the attached ${lob} Policy Checklist.`;
+  const noteLob = LOB_CHECKLIST_ABBR[lob] || lob;
+  preview.textContent = `Please see the attached ${noteLob} Policy Checklist.`;
   preview.style.display = 'block';
   copyBtn.style.display = 'inline-block';
 });
