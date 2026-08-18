@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Docket — Policy Filer</title>
+<script>
+(function(){
+  try{
+    var t = localStorage.getItem('policyFiler.theme') || 'light';
+    if(t !== 'light') document.documentElement.setAttribute('data-theme', t);
+  }catch(e){}
+})();
+</script>
 <style>
   :root{
     --ink:#1c2430;
@@ -15,7 +23,46 @@
     --muted:#6b7280;
     --ok:#2d5d4f;
     --card:#ffffff;
+    --dropzone-bg:#fbfaf6;
+    --tint-ok:#eaf1ee;
+    --tint-warn-bg:#fdf3ea;
+    --tint-warn-border:#eacba4;
+    --tint-warn-text:#7a4a1c;
   }
+  html[data-theme="dark"]{
+    --ink:#e8e6e1;
+    --paper:#15181c;
+    --line:#333a42;
+    --tab:#4a9484;
+    --tab-dark:#6fb5a5;
+    --accent:#e08a5c;
+    --muted:#9aa3ad;
+    --ok:#4a9484;
+    --card:#1e2227;
+    --dropzone-bg:#252a30;
+    --tint-ok:#233530;
+    --tint-warn-bg:#3a2c1c;
+    --tint-warn-border:#5c4527;
+    --tint-warn-text:#e8b788;
+  }
+  html[data-theme="grey"]{
+    --ink:#2b2f33;
+    --paper:#e9eaec;
+    --line:#c3c7cc;
+    --tab:#4b5661;
+    --tab-dark:#343d45;
+    --accent:#a15a3a;
+    --muted:#6b7480;
+    --ok:#4b5661;
+    --card:#f6f7f8;
+    --dropzone-bg:#eceded;
+    --tint-ok:#dde3e6;
+    --tint-warn-bg:#ecdfd3;
+    --tint-warn-border:#cbb392;
+    --tint-warn-text:#5c4023;
+  }
+  html{ transition: background 0.15s ease; }
+  body{ transition: background 0.15s ease, color 0.15s ease; }
   *{box-sizing:border-box;}
   body{
     margin:0;
@@ -29,6 +76,11 @@
     display:flex; align-items:baseline; gap:14px; margin-bottom: 6px;
     border-bottom: 3px solid var(--tab); padding-bottom: 14px;
   }
+  .themeBtn{
+    background: var(--card); border: 1px solid var(--line); border-radius: 5px;
+    padding: 6px 9px; font-size: 0.9rem; cursor: pointer; line-height:1;
+  }
+  .themeBtn.active{ border-color: var(--tab); background: var(--tint-ok); }
   header .tabmark{
     width: 34px; height: 24px; background: var(--tab); border-radius: 2px 2px 0 0;
     position:relative; flex-shrink:0;
@@ -52,11 +104,11 @@
   label{ font-size: 0.75rem; color: var(--muted); font-weight:600;}
   input[type=text], select{
     padding: 9px 10px; border: 1px solid var(--line); border-radius: 4px;
-    font-size: 0.92rem; background: #fff; color: var(--ink);
+    font-size: 0.92rem; background: var(--card); color: var(--ink);
   }
   input:focus, select:focus{ outline: 2px solid var(--tab); outline-offset: 1px; }
   .tagpreview{
-    margin-top: 16px; padding: 12px 14px; background: #fbfaf6; border: 1px dashed var(--line);
+    margin-top: 16px; padding: 12px 14px; background: var(--dropzone-bg); border: 1px dashed var(--line);
     border-radius: 4px; font-family: 'Consolas', 'SF Mono', monospace; font-size: 0.85rem; color: var(--tab-dark);
     word-break: break-all;
   }
@@ -68,18 +120,18 @@
   button:active{ transform: scale(0.98); }
   button.primary{ background: var(--tab); color: #fff; }
   button.primary:hover{ background: var(--tab-dark); }
-  button.ghost{ background: #fff; border-color: var(--line); color: var(--ink); }
+  button.ghost{ background: var(--card); border-color: var(--line); color: var(--ink); }
   button.ghost:hover{ border-color: var(--tab); }
   button:disabled{ opacity: 0.45; cursor: not-allowed; }
   .dropzone{
     border: 2px dashed var(--line); border-radius: 6px; padding: 22px; text-align:center;
     color: var(--muted); font-size: 0.85rem; margin-bottom: 12px; transition: all .15s;
   }
-  .dropzone.drag{ border-color: var(--tab); background: #f0f5f3; color: var(--tab-dark); }
+  .dropzone.drag{ border-color: var(--tab); background: var(--dropzone-bg); color: var(--tab-dark); }
   .filelist{ display:flex; flex-direction:column; gap:8px; }
   .filerow{
     display:flex; align-items:center; gap:10px; padding: 8px 10px;
-    border: 1px solid var(--line); border-radius: 5px; background: #fdfcfa;
+    border: 1px solid var(--line); border-radius: 5px; background: var(--card);
   }
   .filerow .name{ flex:1; font-size: 0.82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .filerow select{ font-size: 0.8rem; padding: 6px 8px; }
@@ -94,10 +146,10 @@
   .log div{ padding: 2px 0; }
   .badge{
     display:inline-block; font-size: 0.7rem; font-weight:700; padding: 3px 8px; border-radius: 20px;
-    background: #eaf1ee; color: var(--tab-dark); margin-left: 8px;
+    background: var(--tint-ok); color: var(--tab-dark); margin-left: 8px;
   }
   .warn{
-    background: #fdf3ea; border: 1px solid #eacba4; color: #7a4a1c; padding: 12px 14px;
+    background: var(--tint-warn-bg); border: 1px solid var(--tint-warn-border); color: var(--tint-warn-text); padding: 12px 14px;
     border-radius: 5px; font-size: 0.82rem; margin-bottom: 18px; display:none;
   }
   .warn.show{ display:block; }
@@ -112,29 +164,29 @@
   .progressTrack{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
   .progressChip{
     font-size: 0.72rem; font-weight:600; padding: 5px 10px; border-radius: 20px;
-    border: 1px solid var(--line); color: var(--muted); background: #fff;
+    border: 1px solid var(--line); color: var(--muted); background: var(--card);
   }
-  .progressChip.done{ background: #eaf1ee; color: var(--tab-dark); border-color: var(--tab); }
+  .progressChip.done{ background: var(--tint-ok); color: var(--tab-dark); border-color: var(--tab); }
   .confirmBox{
-    background: #fdf3ea; border: 1px solid #eacba4; color: #7a4a1c; padding: 10px 12px;
+    background: var(--tint-warn-bg); border: 1px solid var(--tint-warn-border); color: var(--tint-warn-text); padding: 10px 12px;
     border-radius: 5px; font-size: 0.8rem; margin: 8px 0;
   }
   .modeToggle{ display:flex; gap:8px; margin-bottom:18px; }
   .modeToggle button{
-    flex:1; padding:12px; border-radius:6px; border:2px solid var(--line); background:#fff;
+    flex:1; padding:12px; border-radius:6px; border:2px solid var(--line); background:var(--card);
     color:var(--muted); font-size:0.85rem; text-align:left;
   }
-  .modeToggle button.active{ border-color:var(--tab); background:#f0f5f3; color:var(--tab-dark); }
+  .modeToggle button.active{ border-color:var(--tab); background:var(--dropzone-bg); color:var(--tab-dark); }
   .modeToggle button small{ display:block; font-weight:400; font-size:0.72rem; margin-top:2px; }
   .copyRow{
-    display:flex; align-items:center; gap:10px; padding:10px 12px; background:#fbfaf6;
+    display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--dropzone-bg);
     border:1px dashed var(--line); border-radius:5px; margin-bottom:10px;
   }
   .copyRow .val{ flex:1; font-family:'Consolas','SF Mono',monospace; font-size:0.82rem; color:var(--tab-dark); word-break:break-all; }
   .copyRow.dim .val{ color: var(--muted); }
   .docCheckRow{
     display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--line);
-    border-radius:5px; margin-bottom:8px; background:#fff;
+    border-radius:5px; margin-bottom:8px; background:var(--card);
   }
   .docCheckRow input[type=checkbox]{ width:16px; height:16px; cursor:pointer; accent-color:var(--tab); flex-shrink:0; }
   .docCheckRow .val{ flex:1; font-family:'Consolas','SF Mono',monospace; font-size:0.8rem; color:var(--tab-dark); word-break:break-all; }
@@ -146,9 +198,14 @@
   <header>
     <div class="tabmark"></div>
     <h1>Docket</h1>
+    <div class="themeToggle" id="themeToggle" style="margin-left:auto; display:flex; gap:4px;">
+      <button class="themeBtn" data-theme-choice="light" title="Light">☀️</button>
+      <button class="themeBtn" data-theme-choice="grey" title="Grey">◐</button>
+      <button class="themeBtn" data-theme-choice="dark" title="Dark">🌙</button>
+    </div>
   </header>
   <div class="sub">Policy job folders, checklist renaming, document filing — offline. Runs entirely on this device. · <a href="forms-checker.html" style="color:var(--tab);">Forms Checker →</a></div>
-  <a href="./index.html" download="docket-offline.html" style="display:inline-block; margin-bottom:18px; padding:8px 14px; background:#fff; border:1px solid var(--line); border-radius:5px; font-size:0.82rem; font-weight:600; color:var(--tab-dark); text-decoration:none;">⬇ Download offline copy</a>
+  <a href="./index.html" download="docket-offline.html" style="display:inline-block; margin-bottom:18px; padding:8px 14px; background:var(--card); border:1px solid var(--line); border-radius:5px; font-size:0.82rem; font-weight:600; color:var(--tab-dark); text-decoration:none;">⬇ Download offline copy</a>
 
   <div class="warn" id="unsupportedWarn">
     This browser doesn't support local folder access. Open this file in <strong>Chrome</strong> or <strong>Edge</strong> on desktop instead.
@@ -241,7 +298,7 @@
 
   <section class="card" id="excelCard" style="opacity:0.5; pointer-events:none;">
     <h2>3 · Checklist Excel <span class="badge" id="excelBadge">waiting</span></h2>
-    <div id="rememberedExcelRow" style="display:none; margin-bottom:10px; padding:10px 12px; background:#f0f5f3; border:1px solid var(--tab); border-radius:5px; font-size:0.82rem; display:none; align-items:center; gap:10px;">
+    <div id="rememberedExcelRow" style="display:none; margin-bottom:10px; padding:10px 12px; background:var(--dropzone-bg); border:1px solid var(--tab); border-radius:5px; font-size:0.82rem; display:none; align-items:center; gap:10px;">
       <span style="flex:1;">📄 <strong id="rememberedExcelName"></strong><br><span style="color:var(--muted); font-size:0.75rem;">Remembered template — click to use</span></span>
       <button class="ghost rowbtn" id="useRememberedBtn">Use this</button>
       <button class="ghost rowbtn" id="forgetExcelBtn" style="color:var(--muted);">Forget</button>
@@ -292,6 +349,23 @@
 </div>
 
 <script>
+// --- Theme ---
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  document.querySelectorAll('.themeBtn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.themeChoice === theme);
+  });
+  try{ localStorage.setItem('policyFiler.theme', theme); }catch(e){ /* non-fatal */ }
+}
+document.querySelectorAll('.themeBtn').forEach(btn=>{
+  btn.addEventListener('click', ()=> applyTheme(btn.dataset.themeChoice));
+});
+(function(){
+  let saved = 'light';
+  try{ saved = localStorage.getItem('policyFiler.theme') || 'light'; }catch(e){}
+  applyTheme(saved);
+})();
+
 let dirHandle = null;
 let insured = '', period = '', prevPeriod = '', lob = '', policyNum = '', policyType = '', dateStr = '';
 let currentMode = 'manual';
