@@ -119,6 +119,26 @@
     background: #fdf3ea; border: 1px solid #eacba4; color: #7a4a1c; padding: 10px 12px;
     border-radius: 5px; font-size: 0.8rem; margin: 8px 0;
   }
+  .modeToggle{ display:flex; gap:8px; margin-bottom:18px; }
+  .modeToggle button{
+    flex:1; padding:12px; border-radius:6px; border:2px solid var(--line); background:#fff;
+    color:var(--muted); font-size:0.85rem; text-align:left;
+  }
+  .modeToggle button.active{ border-color:var(--tab); background:#f0f5f3; color:var(--tab-dark); }
+  .modeToggle button small{ display:block; font-weight:400; font-size:0.72rem; margin-top:2px; }
+  .copyRow{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; background:#fbfaf6;
+    border:1px dashed var(--line); border-radius:5px; margin-bottom:10px;
+  }
+  .copyRow .val{ flex:1; font-family:'Consolas','SF Mono',monospace; font-size:0.82rem; color:var(--tab-dark); word-break:break-all; }
+  .copyRow.dim .val{ color: var(--muted); }
+  .docCheckRow{
+    display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--line);
+    border-radius:5px; margin-bottom:8px; background:#fff;
+  }
+  .docCheckRow input[type=checkbox]{ width:16px; height:16px; cursor:pointer; accent-color:var(--tab); flex-shrink:0; }
+  .docCheckRow .val{ flex:1; font-family:'Consolas','SF Mono',monospace; font-size:0.8rem; color:var(--tab-dark); word-break:break-all; }
+  .docCheckRow.dim .val{ color: var(--muted); }
 </style>
 </head>
 <body>
@@ -135,6 +155,11 @@
   </div>
 
   <div class="lobBanner" id="lobBanner">Currently working on: <strong id="lobBannerText">—</strong></div>
+
+  <div class="modeToggle">
+    <button id="modeManualBtn" class="active">📋 Manual<small>Copy-paste ready names & notes — no files touched</small></button>
+    <button id="modeAutoBtn">📁 Auto<small>Pick files, app renames & saves them for you</small></button>
+  </div>
 
   <section class="card">
     <h2>1 · Policy details</h2>
@@ -184,6 +209,27 @@
     <div class="tagpreview" id="tagPreview">Job tag will appear here…</div>
   </section>
 
+  <section class="card" id="manualSection">
+    <h2>Names & notes — copy into Job Manager / your file system</h2>
+    <p style="font-size:0.85rem; color:var(--muted); margin-top:0;">Nothing here touches or uploads any file. It only generates the exact text you need, ready to paste wherever you're renaming things yourself.</p>
+
+    <label style="display:block; margin-bottom:6px;">Job Manager tag</label>
+    <div class="copyRow" id="manualJobTagRow">
+      <span class="val" id="manualJobTag">Fill in the fields above…</span>
+      <button class="ghost rowbtn" id="copyJobTagBtn">Copy</button>
+    </div>
+
+    <label style="display:block; margin:14px 0 6px;">Checklist Excel filename</label>
+    <div class="copyRow" id="manualExcelRow">
+      <span class="val" id="manualExcelName">Fill in the fields above…</span>
+      <button class="ghost rowbtn" id="copyExcelNameBtn">Copy</button>
+    </div>
+
+    <label style="display:block; margin:14px 0 6px;">Document filenames — check which ones you have</label>
+    <div id="manualDocsList"></div>
+  </section>
+
+  <div id="autoSection" style="display:none;">
   <section class="card">
     <h2>2 · Job folder</h2>
     <p style="font-size:0.85rem; color:var(--muted); margin-top:0;">Pick the parent location once. A new folder named with the job tag above will be created inside it.</p>
@@ -212,8 +258,9 @@
     <div class="filelist" id="docsList"></div>
     <div class="progressTrack" id="progressTrack"></div>
   </section>
+  </div>
 
-  <section class="card" id="noteCard" style="opacity:0.5; pointer-events:none;">
+  <section class="card" id="noteCard">
     <h2>5 · Notes</h2>
 
     <div style="margin-bottom:20px; padding-bottom:18px; border-bottom:1px solid var(--line);">
@@ -245,6 +292,35 @@
 <script>
 let dirHandle = null;
 let insured = '', period = '', prevPeriod = '', lob = '', policyNum = '', policyType = '', dateStr = '';
+let currentMode = 'manual';
+
+const LOB_COLORS = {
+  'General Liability': '#1f6feb',
+  'Professional': '#8957e5',
+  'Workers Compensation': '#d4a017',
+  'Auto': '#da3633',
+  'Property': '#2da44e',
+  'Accident': '#db6e1a',
+  'Umbrella': '#0891b2'
+};
+
+document.getElementById('modeManualBtn').addEventListener('click', ()=>{
+  currentMode = 'manual';
+  document.getElementById('modeManualBtn').classList.add('active');
+  document.getElementById('modeAutoBtn').classList.remove('active');
+  document.getElementById('manualSection').style.display = 'block';
+  document.getElementById('autoSection').style.display = 'none';
+  refreshFields();
+});
+
+document.getElementById('modeAutoBtn').addEventListener('click', ()=>{
+  currentMode = 'auto';
+  document.getElementById('modeAutoBtn').classList.add('active');
+  document.getElementById('modeManualBtn').classList.remove('active');
+  document.getElementById('manualSection').style.display = 'none';
+  document.getElementById('autoSection').style.display = 'block';
+  refreshFields();
+});
 
 function todayStr(){
   const d = new Date();
@@ -281,11 +357,19 @@ function refreshFields(){
   const tag = jobTag();
   document.getElementById('tagPreview').textContent = tag || 'Fill in the fields above…';
   document.getElementById('lobBannerText').textContent = lob + (insured ? ` — ${insured}` : '');
+  const lobColor = LOB_COLORS[lob] || 'var(--tab)';
+  document.getElementById('lobBanner').style.background = lobColor;
+  const lobSelect = document.getElementById('lob');
+  lobSelect.style.background = lobColor;
+  lobSelect.style.color = '#fff';
+  lobSelect.style.fontWeight = '700';
+  lobSelect.style.borderColor = lobColor;
   try{
     localStorage.setItem('policyFiler.period', period);
     localStorage.setItem('policyFiler.prevPeriod', prevPeriod);
   }catch(e){ /* storage unavailable, non-fatal */ }
   renderProgress();
+  renderManualNames();
 }
 
 function renderProgress(){
@@ -300,6 +384,73 @@ function renderProgress(){
     track.appendChild(chip);
   });
 }
+
+function getAvailableTypes(){
+  if(currentMode === 'auto'){
+    return DOC_TYPES.filter(t => docQueue.some(e => e.type === t && e.status === 'saved'));
+  }
+  return DOC_TYPES.filter(t => {
+    const cb = document.getElementById('manualDoc_' + t);
+    return cb && cb.checked;
+  });
+}
+
+function renderManualNames(){
+  const jobTagEl = document.getElementById('manualJobTag');
+  const jobTagRow = document.getElementById('manualJobTagRow');
+  const excelEl = document.getElementById('manualExcelName');
+  const excelRow = document.getElementById('manualExcelRow');
+  if(!jobTagEl) return;
+  const tag = jobTag();
+  jobTagEl.textContent = tag || 'Fill in the fields above…';
+  jobTagRow.classList.toggle('dim', !tag);
+  const hasBasics = insured && policyNum;
+  const excelN = hasBasics ? excelName('.xlsx') : 'Fill in the fields above…';
+  excelEl.textContent = excelN;
+  excelRow.classList.toggle('dim', !hasBasics);
+
+  const list = document.getElementById('manualDocsList');
+  const prevChecked = {};
+  DOC_TYPES.forEach(t=>{
+    const existing = document.getElementById('manualDoc_' + t);
+    if(existing) prevChecked[t] = existing.checked;
+  });
+  list.innerHTML = '';
+  DOC_TYPES.forEach(t=>{
+    const row = document.createElement('div');
+    row.className = 'docCheckRow' + (hasBasics ? '' : ' dim');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.id = 'manualDoc_' + t;
+    cb.checked = !!prevChecked[t];
+    cb.addEventListener('change', renderManualNames);
+    const val = document.createElement('span');
+    val.className = 'val';
+    val.textContent = hasBasics ? docName(t, '.pdf') : `${t} — fill in the fields above…`;
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'ghost rowbtn';
+    copyBtn.textContent = 'Copy';
+    copyBtn.disabled = !hasBasics;
+    copyBtn.addEventListener('click', async ()=>{
+      try{ await navigator.clipboard.writeText(val.textContent); logMsg(`Copied "${val.textContent}"`); }
+      catch(e){ logMsg('Could not copy automatically — select the text and copy manually', true); }
+    });
+    row.append(cb, val, copyBtn);
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('copyJobTagBtn').addEventListener('click', async ()=>{
+  const text = document.getElementById('manualJobTag').textContent;
+  try{ await navigator.clipboard.writeText(text); logMsg('Job tag copied to clipboard'); }
+  catch(e){ logMsg('Could not copy automatically — select the text and copy manually', true); }
+});
+
+document.getElementById('copyExcelNameBtn').addEventListener('click', async ()=>{
+  const text = document.getElementById('manualExcelName').textContent;
+  try{ await navigator.clipboard.writeText(text); logMsg('Excel filename copied to clipboard'); }
+  catch(e){ logMsg('Could not copy automatically — select the text and copy manually', true); }
+});
 
 try{
   const savedPeriod = localStorage.getItem('policyFiler.period');
@@ -606,11 +757,13 @@ function listWithAnd(items){
 }
 
 document.getElementById('genAvailNoteBtn').addEventListener('click', ()=>{
-  const savedTypes = DOC_TYPES.filter(t => docQueue.some(e => e.type === t && e.status === 'saved'));
+  const savedTypes = getAvailableTypes();
   const preview = document.getElementById('availNotePreview');
   const copyBtn = document.getElementById('copyAvailNoteBtn');
   if(savedTypes.length === 0){
-    preview.textContent = 'No documents have been saved yet — save at least one before generating a note.';
+    preview.textContent = currentMode === 'auto'
+      ? 'No documents have been saved yet — save at least one before generating a note.'
+      : 'No documents checked yet — check off which ones you have above before generating a note.';
   } else {
     const missing = DOC_TYPES.filter(t => !savedTypes.includes(t));
     // Format saved list with & before last item (matching real note style)
