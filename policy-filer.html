@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Policy Filer</title>
+<style>
+  :root{
+    --ink:#1c2430;
+    --paper:#f6f4ef;
+    --line:#d8d3c4;
+    --tab:#2d5d4f;
+    --tab-dark:#1f4238;
+    --accent:#b5542a;
+    --muted:#6b7280;
+    --ok:#2d5d4f;
+    --card:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    padding: 32px 20px 80px;
+  }
+  .wrap{max-width: 780px; margin: 0 auto;}
+  header{
+    display:flex; align-items:baseline; gap:14px; margin-bottom: 6px;
+    border-bottom: 3px solid var(--tab); padding-bottom: 14px;
+  }
+  header .tabmark{
+    width: 34px; height: 24px; background: var(--tab); border-radius: 2px 2px 0 0;
+    position:relative; flex-shrink:0;
+  }
+  h1{ font-size: 1.4rem; margin:0; letter-spacing: -0.01em;}
+  .sub{ color: var(--muted); font-size: 0.85rem; margin: 4px 0 28px 48px;}
+  section.card{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 22px 24px;
+    margin-bottom: 18px;
+  }
+  section.card h2{
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--tab-dark); margin: 0 0 16px 0; font-weight: 700;
+  }
+  .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px;}
+  .field{ display:flex; flex-direction:column; gap:5px; }
+  .field.full{ grid-column: 1 / -1; }
+  label{ font-size: 0.75rem; color: var(--muted); font-weight:600;}
+  input[type=text], select{
+    padding: 9px 10px; border: 1px solid var(--line); border-radius: 4px;
+    font-size: 0.92rem; background: #fff; color: var(--ink);
+  }
+  input:focus, select:focus{ outline: 2px solid var(--tab); outline-offset: 1px; }
+  .tagpreview{
+    margin-top: 16px; padding: 12px 14px; background: #fbfaf6; border: 1px dashed var(--line);
+    border-radius: 4px; font-family: 'Consolas', 'SF Mono', monospace; font-size: 0.85rem; color: var(--tab-dark);
+    word-break: break-all;
+  }
+  button{
+    font-family: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+    border-radius: 5px; border: 1px solid transparent; padding: 9px 16px;
+    transition: transform 0.05s ease;
+  }
+  button:active{ transform: scale(0.98); }
+  button.primary{ background: var(--tab); color: #fff; }
+  button.primary:hover{ background: var(--tab-dark); }
+  button.ghost{ background: #fff; border-color: var(--line); color: var(--ink); }
+  button.ghost:hover{ border-color: var(--tab); }
+  button:disabled{ opacity: 0.45; cursor: not-allowed; }
+  .dropzone{
+    border: 2px dashed var(--line); border-radius: 6px; padding: 22px; text-align:center;
+    color: var(--muted); font-size: 0.85rem; margin-bottom: 12px; transition: all .15s;
+  }
+  .dropzone.drag{ border-color: var(--tab); background: #f0f5f3; color: var(--tab-dark); }
+  .filelist{ display:flex; flex-direction:column; gap:8px; }
+  .filerow{
+    display:flex; align-items:center; gap:10px; padding: 8px 10px;
+    border: 1px solid var(--line); border-radius: 5px; background: #fdfcfa;
+  }
+  .filerow .name{ flex:1; font-size: 0.82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .filerow select{ font-size: 0.8rem; padding: 6px 8px; }
+  .filerow .status{ font-size: 0.75rem; color: var(--ok); font-weight:600; min-width: 60px; text-align:right;}
+  .status.pending{ color: var(--muted); }
+  .status.err{ color: #b23a2f; }
+  .rowbtn{ padding: 6px 10px; font-size: 0.78rem; }
+  .log{
+    font-family: 'Consolas','SF Mono', monospace; font-size: 0.78rem; color: var(--muted);
+    max-height: 130px; overflow-y:auto; margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px;
+  }
+  .log div{ padding: 2px 0; }
+  .badge{
+    display:inline-block; font-size: 0.7rem; font-weight:700; padding: 3px 8px; border-radius: 20px;
+    background: #eaf1ee; color: var(--tab-dark); margin-left: 8px;
+  }
+  .warn{
+    background: #fdf3ea; border: 1px solid #eacba4; color: #7a4a1c; padding: 12px 14px;
+    border-radius: 5px; font-size: 0.82rem; margin-bottom: 18px; display:none;
+  }
+  .warn.show{ display:block; }
+  .folderline{ font-size: 0.82rem; color: var(--muted); margin-top: 10px; }
+  .folderline strong{ color: var(--tab-dark); }
+  .lobBanner{
+    position: sticky; top: 0; z-index: 10;
+    background: var(--tab-dark); color: #fff; padding: 10px 16px; border-radius: 5px;
+    font-size: 0.85rem; margin-bottom: 18px; letter-spacing: 0.01em;
+  }
+  .lobBanner strong{ font-size: 0.95rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="tabmark"></div>
+    <h1>Policy Filer</h1>
+  </header>
+  <div class="sub">Job folder + checklist + document renaming, offline. Runs entirely on this device. · <a href="index.html" style="color:var(--tab);">← Back to Forms Checker</a></div>
+
+  <div class="warn" id="unsupportedWarn">
+    This browser doesn't support local folder access. Open this file in <strong>Chrome</strong> or <strong>Edge</strong> on desktop instead.
+  </div>
+
+  <div class="lobBanner" id="lobBanner">Currently working on: <strong id="lobBannerText">—</strong></div>
+
+  <section class="card">
+    <h2>1 · Policy details</h2>
+    <div class="grid">
+      <div class="field">
+        <label for="period">Policy period</label>
+        <input type="text" id="period" value="26-27">
+      </div>
+      <div class="field">
+        <label for="prevPeriod">Previous period</label>
+        <input type="text" id="prevPeriod" value="25-26">
+      </div>
+      <div class="field">
+        <label for="lob">Line of business</label>
+        <select id="lob">
+          <option>General Liability</option>
+          <option>Professional</option>
+          <option>Workers Compensation</option>
+          <option>Auto</option>
+          <option>Property</option>
+          <option>Accident</option>
+          <option>Umbrella</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="policyNum">Policy number</label>
+        <input type="text" id="policyNum" placeholder="e.g. GL-0012345">
+      </div>
+      <div class="field full">
+        <label for="insured">Name of insured</label>
+        <input type="text" id="insured" placeholder="e.g. Acme Corp">
+      </div>
+    </div>
+    <div class="tagpreview" id="tagPreview">Job tag will appear here…</div>
+  </section>
+
+  <section class="card">
+    <h2>2 · Job folder</h2>
+    <p style="font-size:0.85rem; color:var(--muted); margin-top:0;">Pick the parent location once. A new folder named with the job tag above will be created inside it.</p>
+    <button class="primary" id="pickFolderBtn">Choose location &amp; create folder</button>
+    <div class="folderline" id="folderStatus">No folder selected yet.</div>
+  </section>
+
+  <section class="card" id="excelCard" style="opacity:0.5; pointer-events:none;">
+    <h2>3 · Checklist Excel <span class="badge" id="excelBadge">waiting</span></h2>
+    <div class="dropzone" id="excelDrop">Drag your checklist Excel file here, or use the button below</div>
+    <input type="file" id="excelInput" accept=".xlsx,.xls,.xlsm" style="display:none">
+    <button class="ghost" id="excelBrowseBtn">Browse for Excel file</button>
+    <div id="excelResult" style="margin-top:10px; font-size:0.82rem;"></div>
+  </section>
+
+  <section class="card" id="docsCard" style="opacity:0.5; pointer-events:none;">
+    <h2>4 · Documents</h2>
+    <div class="dropzone" id="docsDrop">Drag PDFs here, or use the button below — you can add several at once</div>
+    <input type="file" id="docsInput" accept=".pdf" multiple style="display:none">
+    <button class="ghost" id="docsBrowseBtn" style="margin-bottom:14px;">Browse for PDFs</button>
+    <div class="filelist" id="docsList"></div>
+  </section>
+
+  <section class="card" id="noteCard" style="opacity:0.5; pointer-events:none;">
+    <h2>5 · Notes</h2>
+
+    <div style="margin-bottom:20px; padding-bottom:18px; border-bottom:1px solid var(--line);">
+      <strong style="font-size:0.85rem;">When starting the checklist — document availability</strong>
+      <p style="font-size:0.82rem; color:var(--muted); margin:4px 0 10px;">Lists which of the six document types you saved, and which weren't available.</p>
+      <button class="ghost" id="genAvailNoteBtn">Generate note</button>
+      <div class="tagpreview" id="availNotePreview" style="display:none;"></div>
+      <button class="ghost" id="copyAvailNoteBtn" style="display:none; margin-top:10px;">Copy to clipboard</button>
+    </div>
+
+    <div>
+      <strong style="font-size:0.85rem;">When finished — attaching to Applied Epic</strong>
+      <p style="font-size:0.82rem; color:var(--muted); margin:4px 0 10px;">The standard reminder line for the LOB you're currently working on.</p>
+      <button class="ghost" id="genAttachNoteBtn">Generate note</button>
+      <div class="tagpreview" id="attachNotePreview" style="display:none;"></div>
+      <button class="ghost" id="copyAttachNoteBtn" style="display:none; margin-top:10px;">Copy to clipboard</button>
+    </div>
+  </section>
+
+  <section class="card" style="background:transparent; border:none; padding:0;">
+    <div class="log" id="log"></div>
+  </section>
+</div>
+
+<script>
+let dirHandle = null;
+let insured = '', period = '', prevPeriod = '', lob = '', policyNum = '';
+const docQueue = []; // {file, type, status}
+
+const DOC_TYPES = ['Current','Previous','Application','Quote','Proposal','Binder'];
+
+function logMsg(msg, isErr){
+  const el = document.getElementById('log');
+  const line = document.createElement('div');
+  line.textContent = (isErr? '✕ ' : '✓ ') + msg;
+  if(isErr) line.style.color = '#b23a2f';
+  el.prepend(line);
+}
+
+function lobShort(){ return document.getElementById('lob').value; }
+
+function refreshFields(){
+  period = document.getElementById('period').value.trim();
+  prevPeriod = document.getElementById('prevPeriod').value.trim();
+  lob = document.getElementById('lob').value;
+  insured = document.getElementById('insured').value.trim();
+  policyNum = document.getElementById('policyNum').value.trim();
+  const tag = jobTag();
+  document.getElementById('tagPreview').textContent = tag || 'Fill in the fields above…';
+  document.getElementById('lobBannerText').textContent = lob + (insured ? ` — ${insured}` : '');
+}
+
+function sanitize(name){
+  return name.replace(/[\\/:*?"<>|]/g, '').trim();
+}
+
+function jobTag(){
+  if(!insured || !policyNum) return '';
+  return sanitize(`${period} - ${lob} - ${insured} - ${policyNum}`);
+}
+
+function excelName(ext){
+  return sanitize(`${period} (${lob}) Policy Checklist - ${insured}`) + ext;
+}
+
+function docName(type, ext){
+  const label = type === 'Previous' ? `(${prevPeriod})Previous` : type;
+  return sanitize(`${period} - ${lob} - ${label} - ${insured}`) + ext;
+}
+
+['period','prevPeriod','lob','insured','policyNum'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', refreshFields);
+  document.getElementById(id).addEventListener('change', refreshFields);
+});
+refreshFields();
+
+// Feature check
+if(!window.showDirectoryPicker){
+  document.getElementById('unsupportedWarn').classList.add('show');
+  document.getElementById('pickFolderBtn').disabled = true;
+}
+
+document.getElementById('pickFolderBtn').addEventListener('click', async ()=>{
+  refreshFields();
+  const tag = jobTag();
+  if(!tag){ alert('Fill in Insured Name and Policy Number first.'); return; }
+  try{
+    const parent = await window.showDirectoryPicker();
+    dirHandle = await parent.getDirectoryHandle(tag, {create:true});
+    document.getElementById('folderStatus').innerHTML = `Folder ready: <strong>${tag}</strong>`;
+    document.getElementById('excelCard').style.opacity = '1';
+    document.getElementById('excelCard').style.pointerEvents = 'auto';
+    document.getElementById('docsCard').style.opacity = '1';
+    document.getElementById('docsCard').style.pointerEvents = 'auto';
+    document.getElementById('noteCard').style.opacity = '1';
+    document.getElementById('noteCard').style.pointerEvents = 'auto';
+    logMsg(`Created/opened folder "${tag}"`);
+  }catch(e){
+    if(e.name !== 'AbortError') logMsg('Could not create folder: ' + e.message, true);
+  }
+});
+
+async function saveFileAs(file, newName){
+  const fh = await dirHandle.getFileHandle(newName, {create:true});
+  const writable = await fh.createWritable();
+  await writable.write(await file.arrayBuffer());
+  await writable.close();
+}
+
+// --- Excel handling ---
+function extOf(filename){
+  const m = filename.match(/\.[^.]+$/);
+  return m ? m[0] : '';
+}
+
+async function handleExcel(file){
+  refreshFields();
+  if(!dirHandle){ alert('Create the job folder first.'); return; }
+  const newName = excelName(extOf(file.name));
+  try{
+    await saveFileAs(file, newName);
+    document.getElementById('excelBadge').textContent = 'saved';
+    document.getElementById('excelResult').textContent = `Saved as: ${newName}`;
+    logMsg(`Checklist saved as "${newName}"`);
+  }catch(e){
+    logMsg('Failed to save Excel file: ' + e.message, true);
+  }
+}
+
+document.getElementById('excelBrowseBtn').addEventListener('click', ()=> document.getElementById('excelInput').click());
+document.getElementById('excelInput').addEventListener('change', e=>{
+  if(e.target.files[0]) handleExcel(e.target.files[0]);
+});
+const excelDrop = document.getElementById('excelDrop');
+excelDrop.addEventListener('dragover', e=>{ e.preventDefault(); excelDrop.classList.add('drag'); });
+excelDrop.addEventListener('dragleave', ()=> excelDrop.classList.remove('drag'));
+excelDrop.addEventListener('drop', e=>{
+  e.preventDefault(); excelDrop.classList.remove('drag');
+  if(e.dataTransfer.files[0]) handleExcel(e.dataTransfer.files[0]);
+});
+
+// --- Documents handling ---
+function renderDocsList(){
+  const list = document.getElementById('docsList');
+  list.innerHTML = '';
+  docQueue.forEach((entry, idx)=>{
+    const row = document.createElement('div');
+    row.className = 'filerow';
+    const nameSpan = document.createElement('div');
+    nameSpan.className = 'name';
+    nameSpan.textContent = entry.file.name;
+    const select = document.createElement('select');
+    DOC_TYPES.forEach(t=>{
+      const opt = document.createElement('option');
+      opt.value = t; opt.textContent = t;
+      if(t === entry.type) opt.selected = true;
+      select.appendChild(opt);
+    });
+    select.addEventListener('change', ()=>{ entry.type = select.value; });
+    const btn = document.createElement('button');
+    btn.className = 'ghost rowbtn';
+    btn.textContent = entry.status === 'saved' ? 'Re-save' : 'Rename & Save';
+    btn.addEventListener('click', async ()=>{
+      refreshFields();
+      if(!dirHandle){ alert('Create the job folder first.'); return; }
+      const newName = docName(entry.type, extOf(entry.file.name));
+      try{
+        await saveFileAs(entry.file, newName);
+        entry.status = 'saved';
+        entry.savedName = newName;
+        renderDocsList();
+        logMsg(`Document saved as "${newName}"`);
+      }catch(e){
+        entry.status = 'error';
+        renderDocsList();
+        logMsg('Failed to save "' + entry.file.name + '": ' + e.message, true);
+      }
+    });
+    const status = document.createElement('div');
+    status.className = 'status ' + (entry.status === 'saved' ? '' : entry.status === 'error' ? 'err' : 'pending');
+    status.textContent = entry.status === 'saved' ? 'saved' : entry.status === 'error' ? 'error' : 'pending';
+    row.append(nameSpan, select, btn, status);
+    list.appendChild(row);
+  });
+}
+
+function listWithAnd(items){
+  if(items.length === 0) return '';
+  if(items.length === 1) return items[0];
+  if(items.length === 2) return items[0] + ' and ' + items[1];
+  return items.slice(0,-1).join(', ') + ', and ' + items[items.length-1];
+}
+
+document.getElementById('genAvailNoteBtn').addEventListener('click', ()=>{
+  const savedTypes = DOC_TYPES.filter(t => docQueue.some(e => e.type === t && e.status === 'saved'));
+  const preview = document.getElementById('availNotePreview');
+  const copyBtn = document.getElementById('copyAvailNoteBtn');
+  if(savedTypes.length === 0){
+    preview.textContent = 'No documents have been saved yet — save at least one before generating a note.';
+  } else {
+    const missing = DOC_TYPES.filter(t => !savedTypes.includes(t));
+    let text = `Please note that only the following documents were available and have been attached: ${listWithAnd(savedTypes)}.`;
+    if(missing.length > 0){
+      text += ` ${listWithAnd(missing)} ${missing.length === 1 ? 'was' : 'were'} not available.`;
+    }
+    preview.textContent = text;
+  }
+  preview.style.display = 'block';
+  copyBtn.style.display = 'inline-block';
+});
+
+document.getElementById('copyAvailNoteBtn').addEventListener('click', async ()=>{
+  const text = document.getElementById('availNotePreview').textContent;
+  try{ await navigator.clipboard.writeText(text); logMsg('Availability note copied to clipboard'); }
+  catch(e){ logMsg('Could not copy automatically — select the text and copy manually', true); }
+});
+
+document.getElementById('genAttachNoteBtn').addEventListener('click', ()=>{
+  refreshFields();
+  const preview = document.getElementById('attachNotePreview');
+  const copyBtn = document.getElementById('copyAttachNoteBtn');
+  preview.textContent = `Please see the attached ${lob} Policy Checklist.`;
+  preview.style.display = 'block';
+  copyBtn.style.display = 'inline-block';
+});
+
+document.getElementById('copyAttachNoteBtn').addEventListener('click', async ()=>{
+  const text = document.getElementById('attachNotePreview').textContent;
+  try{ await navigator.clipboard.writeText(text); logMsg('Attachment note copied to clipboard'); }
+  catch(e){ logMsg('Could not copy automatically — select the text and copy manually', true); }
+});
+
+function addDocs(fileList){
+  Array.from(fileList).forEach(file=>{
+    docQueue.push({file, type: 'Current', status: 'pending'});
+  });
+  renderDocsList();
+}
+
+document.getElementById('docsBrowseBtn').addEventListener('click', ()=> document.getElementById('docsInput').click());
+document.getElementById('docsInput').addEventListener('change', e=> addDocs(e.target.files));
+const docsDrop = document.getElementById('docsDrop');
+docsDrop.addEventListener('dragover', e=>{ e.preventDefault(); docsDrop.classList.add('drag'); });
+docsDrop.addEventListener('dragleave', ()=> docsDrop.classList.remove('drag'));
+docsDrop.addEventListener('drop', e=>{
+  e.preventDefault(); docsDrop.classList.remove('drag');
+  addDocs(e.dataTransfer.files);
+});
+</script>
+</body>
+</html>
