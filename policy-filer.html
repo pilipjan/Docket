@@ -109,6 +109,16 @@
     font-size: 0.85rem; margin-bottom: 18px; letter-spacing: 0.01em;
   }
   .lobBanner strong{ font-size: 0.95rem; }
+  .progressTrack{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .progressChip{
+    font-size: 0.72rem; font-weight:600; padding: 5px 10px; border-radius: 20px;
+    border: 1px solid var(--line); color: var(--muted); background: #fff;
+  }
+  .progressChip.done{ background: #eaf1ee; color: var(--tab-dark); border-color: var(--tab); }
+  .confirmBox{
+    background: #fdf3ea; border: 1px solid #eacba4; color: #7a4a1c; padding: 10px 12px;
+    border-radius: 5px; font-size: 0.8rem; margin: 8px 0;
+  }
 </style>
 </head>
 <body>
@@ -158,6 +168,7 @@
       </div>
     </div>
     <div class="tagpreview" id="tagPreview">Job tag will appear here…</div>
+    <button class="ghost" id="resetBtn" style="margin-top:14px;">Start next policy (reset form)</button>
   </section>
 
   <section class="card">
@@ -181,6 +192,7 @@
     <input type="file" id="docsInput" accept=".pdf" multiple style="display:none">
     <button class="ghost" id="docsBrowseBtn" style="margin-bottom:14px;">Browse for PDFs</button>
     <div class="filelist" id="docsList"></div>
+    <div class="progressTrack" id="progressTrack"></div>
   </section>
 
   <section class="card" id="noteCard" style="opacity:0.5; pointer-events:none;">
@@ -234,7 +246,32 @@ function refreshFields(){
   const tag = jobTag();
   document.getElementById('tagPreview').textContent = tag || 'Fill in the fields above…';
   document.getElementById('lobBannerText').textContent = lob + (insured ? ` — ${insured}` : '');
+  try{
+    localStorage.setItem('policyFiler.period', period);
+    localStorage.setItem('policyFiler.prevPeriod', prevPeriod);
+  }catch(e){ /* storage unavailable, non-fatal */ }
+  renderProgress();
 }
+
+function renderProgress(){
+  const track = document.getElementById('progressTrack');
+  if(!track) return;
+  track.innerHTML = '';
+  DOC_TYPES.forEach(t=>{
+    const done = docQueue.some(e => e.type === t && e.status === 'saved');
+    const chip = document.createElement('span');
+    chip.className = 'progressChip' + (done ? ' done' : '');
+    chip.textContent = (done ? '✓ ' : '') + t;
+    track.appendChild(chip);
+  });
+}
+
+try{
+  const savedPeriod = localStorage.getItem('policyFiler.period');
+  const savedPrev = localStorage.getItem('policyFiler.prevPeriod');
+  if(savedPeriod) document.getElementById('period').value = savedPeriod;
+  if(savedPrev) document.getElementById('prevPeriod').value = savedPrev;
+}catch(e){ /* storage unavailable, non-fatal */ }
 
 function sanitize(name){
   return name.replace(/[\\/:*?"<>|]/g, '').trim();
@@ -259,6 +296,30 @@ function docName(type, ext){
   document.getElementById(id).addEventListener('change', refreshFields);
 });
 refreshFields();
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if(docQueue.length > 0 && !confirm('Start a new policy? This clears the insured, policy #, folder, and document list on screen (period/LOB stay as-is; saved files on disk are untouched).')) return;
+  document.getElementById('insured').value = '';
+  document.getElementById('policyNum').value = '';
+  document.getElementById('excelBadge').textContent = 'waiting';
+  document.getElementById('excelResult').textContent = '';
+  dirHandle = null;
+  docQueue.length = 0;
+  renderDocsList();
+  document.getElementById('folderStatus').textContent = 'No folder selected yet.';
+  document.getElementById('excelCard').style.opacity = '0.5';
+  document.getElementById('excelCard').style.pointerEvents = 'none';
+  document.getElementById('docsCard').style.opacity = '0.5';
+  document.getElementById('docsCard').style.pointerEvents = 'none';
+  document.getElementById('noteCard').style.opacity = '0.5';
+  document.getElementById('noteCard').style.pointerEvents = 'none';
+  document.getElementById('availNotePreview').style.display = 'none';
+  document.getElementById('attachNotePreview').style.display = 'none';
+  document.getElementById('copyAvailNoteBtn').style.display = 'none';
+  document.getElementById('copyAttachNoteBtn').style.display = 'none';
+  refreshFields();
+  logMsg('Form reset for next policy');
+});
 
 // Feature check
 if(!window.showDirectoryPicker){
@@ -286,11 +347,32 @@ document.getElementById('pickFolderBtn').addEventListener('click', async ()=>{
   }
 });
 
+async function fileExists(name){
+  try{
+    await dirHandle.getFileHandle(name, {create:false});
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
 async function saveFileAs(file, newName){
-  const fh = await dirHandle.getFileHandle(newName, {create:true});
-  const writable = await fh.createWritable();
-  await writable.write(await file.arrayBuffer());
-  await writable.close();
+  if(await fileExists(newName)){
+    const proceed = confirm(`"${newName}" already exists in the job folder. Overwrite it?`);
+    if(!proceed) return false;
+  }
+  try{
+    const fh = await dirHandle.getFileHandle(newName, {create:true});
+    const writable = await fh.createWritable();
+    await writable.write(await file.arrayBuffer());
+    await writable.close();
+    return true;
+  }catch(e){
+    if(e.name === 'NotAllowedError'){
+      throw new Error('Folder permission was lost — click "Choose location & create folder" again to reselect it.');
+    }
+    throw e;
+  }
 }
 
 // --- Excel handling ---
@@ -304,7 +386,8 @@ async function handleExcel(file){
   if(!dirHandle){ alert('Create the job folder first.'); return; }
   const newName = excelName(extOf(file.name));
   try{
-    await saveFileAs(file, newName);
+    const saved = await saveFileAs(file, newName);
+    if(!saved){ logMsg('Excel save cancelled (file already existed)'); return; }
     document.getElementById('excelBadge').textContent = 'saved';
     document.getElementById('excelResult').textContent = `Saved as: ${newName}`;
     logMsg(`Checklist saved as "${newName}"`);
@@ -351,10 +434,12 @@ function renderDocsList(){
       if(!dirHandle){ alert('Create the job folder first.'); return; }
       const newName = docName(entry.type, extOf(entry.file.name));
       try{
-        await saveFileAs(entry.file, newName);
+        const saved = await saveFileAs(entry.file, newName);
+        if(!saved){ logMsg('Save cancelled (file already existed)'); return; }
         entry.status = 'saved';
         entry.savedName = newName;
         renderDocsList();
+        renderProgress();
         logMsg(`Document saved as "${newName}"`);
       }catch(e){
         entry.status = 'error';
@@ -421,6 +506,7 @@ function addDocs(fileList){
     docQueue.push({file, type: 'Current', status: 'pending'});
   });
   renderDocsList();
+  renderProgress();
 }
 
 document.getElementById('docsBrowseBtn').addEventListener('click', ()=> document.getElementById('docsInput').click());
