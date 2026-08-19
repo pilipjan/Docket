@@ -321,11 +321,11 @@
   </section>
   </div>
 
-  <section class="card" id="noteCard">
-    <h2>5 · Notes</h2>
+  <section class="card" id="noteCard" style="border: 2px solid var(--accent); background: var(--tint-warn-bg);">
+    <h2 style="color: var(--tint-warn-text);">⚠️ 5 · Important Notes — required for every policy</h2>
 
-    <div style="margin-bottom:20px; padding-bottom:18px; border-bottom:1px solid var(--line);">
-      <strong style="font-size:0.85rem;">When starting the checklist — document availability</strong>
+    <div style="margin-bottom:20px; padding-bottom:18px; border-bottom:1px solid var(--tint-warn-border);">
+      <strong style="font-size:0.85rem; color: var(--tint-warn-text);">📌 When starting the checklist — document availability</strong>
       <p style="font-size:0.82rem; color:var(--muted); margin:4px 0 10px;">Lists which of the six document types you saved, and which weren't available.</p>
       <button class="ghost" id="genAvailNoteBtn">Generate note</button>
       <div class="importantNote" id="availNotePreview" style="display:none;"></div>
@@ -333,7 +333,7 @@
     </div>
 
     <div>
-      <strong style="font-size:0.85rem;">When finished — attaching to Applied Epic</strong>
+      <strong style="font-size:0.85rem; color: var(--tint-warn-text);">📌 When finished — attaching to Applied Epic</strong>
       <p style="font-size:0.82rem; color:var(--muted); margin:4px 0 10px;">The standard reminder line for the LOB you're currently working on.</p>
       <button class="ghost" id="genAttachNoteBtn">Generate note</button>
       <div class="importantNote" id="attachNotePreview" style="display:none;"></div>
