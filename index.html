@@ -112,6 +112,11 @@
     border-radius: 4px; font-family: 'Consolas', 'SF Mono', monospace; font-size: 0.85rem; color: var(--tab-dark);
     word-break: break-all;
   }
+  .importantNote{
+    margin-top: 10px; padding: 14px 16px; background: var(--tint-warn-bg);
+    border: 2px solid var(--accent); border-radius: 5px;
+    font-size: 0.88rem; color: var(--tint-warn-text); font-weight: 600; line-height: 1.5;
+  }
   button{
     font-family: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer;
     border-radius: 5px; border: 1px solid transparent; padding: 9px 16px;
@@ -171,13 +176,11 @@
     background: var(--tint-warn-bg); border: 1px solid var(--tint-warn-border); color: var(--tint-warn-text); padding: 10px 12px;
     border-radius: 5px; font-size: 0.8rem; margin: 8px 0;
   }
-  .modeToggle{ display:flex; gap:8px; margin-bottom:18px; }
-  .modeToggle button{
-    flex:1; padding:12px; border-radius:6px; border:2px solid var(--line); background:var(--card);
-    color:var(--muted); font-size:0.85rem; text-align:left;
+  .autoModeLink{
+    background: none; border: none; color: var(--muted); font-size: 0.78rem;
+    text-decoration: underline; cursor: pointer; padding: 4px 2px;
   }
-  .modeToggle button.active{ border-color:var(--tab); background:var(--dropzone-bg); color:var(--tab-dark); }
-  .modeToggle button small{ display:block; font-weight:400; font-size:0.72rem; margin-top:2px; }
+  .autoModeLink:hover{ color: var(--tab-dark); }
   .copyRow{
     display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--dropzone-bg);
     border:1px dashed var(--line); border-radius:5px; margin-bottom:10px;
@@ -213,9 +216,8 @@
 
   <div class="lobBanner" id="lobBanner">Currently working on: <strong id="lobBannerText">—</strong></div>
 
-  <div class="modeToggle">
-    <button id="modeManualBtn" class="active">📋 Manual<small>Copy-paste ready names & notes — no files touched</small></button>
-    <button id="modeAutoBtn">📁 Auto<small>Pick files, app renames & saves them for you</small></button>
+  <div style="text-align:right; margin-bottom:6px;">
+    <button id="modeToggleBtn" class="autoModeLink">📁 Switch to Auto mode (pick &amp; rename files)</button>
   </div>
 
   <section class="card">
@@ -326,7 +328,7 @@
       <strong style="font-size:0.85rem;">When starting the checklist — document availability</strong>
       <p style="font-size:0.82rem; color:var(--muted); margin:4px 0 10px;">Lists which of the six document types you saved, and which weren't available.</p>
       <button class="ghost" id="genAvailNoteBtn">Generate note</button>
-      <div class="tagpreview" id="availNotePreview" style="display:none;"></div>
+      <div class="importantNote" id="availNotePreview" style="display:none;"></div>
       <button class="ghost" id="copyAvailNoteBtn" style="display:none; margin-top:10px;">Copy to clipboard</button>
     </div>
 
@@ -334,7 +336,7 @@
       <strong style="font-size:0.85rem;">When finished — attaching to Applied Epic</strong>
       <p style="font-size:0.82rem; color:var(--muted); margin:4px 0 10px;">The standard reminder line for the LOB you're currently working on.</p>
       <button class="ghost" id="genAttachNoteBtn">Generate note</button>
-      <div class="tagpreview" id="attachNotePreview" style="display:none;"></div>
+      <div class="importantNote" id="attachNotePreview" style="display:none;"></div>
       <button class="ghost" id="copyAttachNoteBtn" style="display:none; margin-top:10px;">Copy to clipboard</button>
     </div>
   </section>
@@ -381,21 +383,19 @@ const LOB_COLORS = {
   'Umbrella': '#0891b2'
 };
 
-document.getElementById('modeManualBtn').addEventListener('click', ()=>{
-  currentMode = 'manual';
-  document.getElementById('modeManualBtn').classList.add('active');
-  document.getElementById('modeAutoBtn').classList.remove('active');
-  document.getElementById('manualSection').style.display = 'block';
-  document.getElementById('autoSection').style.display = 'none';
-  refreshFields();
-});
-
-document.getElementById('modeAutoBtn').addEventListener('click', ()=>{
-  currentMode = 'auto';
-  document.getElementById('modeAutoBtn').classList.add('active');
-  document.getElementById('modeManualBtn').classList.remove('active');
-  document.getElementById('manualSection').style.display = 'none';
-  document.getElementById('autoSection').style.display = 'block';
+document.getElementById('modeToggleBtn').addEventListener('click', ()=>{
+  const btn = document.getElementById('modeToggleBtn');
+  if(currentMode === 'manual'){
+    currentMode = 'auto';
+    btn.innerHTML = '📋 Switch back to Manual mode (copy-paste names)';
+    document.getElementById('manualSection').style.display = 'none';
+    document.getElementById('autoSection').style.display = 'block';
+  } else {
+    currentMode = 'manual';
+    btn.innerHTML = '📁 Switch to Auto mode (pick &amp; rename files)';
+    document.getElementById('manualSection').style.display = 'block';
+    document.getElementById('autoSection').style.display = 'none';
+  }
   refreshFields();
 });
 
