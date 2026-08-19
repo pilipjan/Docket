@@ -28,6 +28,9 @@
     --tint-warn-bg:#fdf3ea;
     --tint-warn-border:#eacba4;
     --tint-warn-text:#7a4a1c;
+    --tint-result-bg:#2b2f33;
+    --tint-result-border:#4a5058;
+    --tint-result-text:#f0f1f2;
   }
   html[data-theme="dark"]{
     --ink:#e8e6e1;
@@ -44,6 +47,9 @@
     --tint-warn-bg:#3a2c1c;
     --tint-warn-border:#5c4527;
     --tint-warn-text:#e8b788;
+    --tint-result-bg:#0e1013;
+    --tint-result-border:#3a4149;
+    --tint-result-text:#e8e6e1;
   }
   html[data-theme="grey"]{
     --ink:#2b2f33;
@@ -60,6 +66,9 @@
     --tint-warn-bg:#ecdfd3;
     --tint-warn-border:#cbb392;
     --tint-warn-text:#5c4023;
+    --tint-result-bg:#3a3f44;
+    --tint-result-border:#585f66;
+    --tint-result-text:#f2f3f4;
   }
   html{ transition: background 0.15s ease; }
   body{ transition: background 0.15s ease, color 0.15s ease; }
@@ -113,9 +122,9 @@
     word-break: break-all;
   }
   .importantNote{
-    margin-top: 10px; padding: 14px 16px; background: var(--tint-warn-bg);
-    border: 2px solid var(--accent); border-radius: 5px;
-    font-size: 0.88rem; color: var(--tint-warn-text); font-weight: 600; line-height: 1.5;
+    margin-top: 10px; padding: 14px 16px; background: var(--tint-result-bg);
+    border: 2px solid var(--tint-result-border); border-radius: 5px;
+    font-size: 0.88rem; color: var(--tint-result-text); font-weight: 600; line-height: 1.5;
   }
   button{
     font-family: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer;
@@ -567,7 +576,7 @@ function excelName(ext){
 function docName(type, ext){
   const d = dateStr ? ` - ${dateStr}` : '';
   if(type === 'Previous'){
-    return sanitize(`(${prevPeriod})Previous - ${lob} - ${insured}${d}`) + ext;
+    return sanitize(`${prevPeriod} - Previous - ${lob} - ${insured}${d}`) + ext;
   }
   return sanitize(`${period} - ${lob} - ${type} - ${insured}${d}`) + ext;
 }
