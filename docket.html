@@ -576,7 +576,7 @@ function excelName(ext){
 function docName(type, ext){
   const d = dateStr ? ` - ${dateStr}` : '';
   if(type === 'Previous'){
-    return sanitize(`${prevPeriod} - Previous - ${lob} - ${insured}${d}`) + ext;
+    return sanitize(`${prevPeriod} - ${lob} - Previous - ${insured}${d}`) + ext;
   }
   return sanitize(`${period} - ${lob} - ${type} - ${insured}${d}`) + ext;
 }
