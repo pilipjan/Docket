@@ -342,7 +342,7 @@
     </div>
 
     <div>
-      <strong style="font-size:0.85rem; color: var(--tint-warn-text);">📌 When finished — attaching to Applied Epic</strong>
+      <strong style="font-size:0.85rem; color: var(--tint-warn-text);">📌 When finished — attaching the checklist</strong>
       <p style="font-size:0.82rem; color:var(--muted); margin:4px 0 10px;">The standard reminder line for the LOB you're currently working on.</p>
       <button class="ghost" id="genAttachNoteBtn">Generate note</button>
       <div class="importantNote" id="attachNotePreview" style="display:none;"></div>
@@ -896,7 +896,7 @@ document.getElementById('genAttachNoteBtn').addEventListener('click', ()=>{
   const preview = document.getElementById('attachNotePreview');
   const copyBtn = document.getElementById('copyAttachNoteBtn');
   const noteLob = LOB_CHECKLIST_ABBR[lob] || lob;
-  preview.textContent = `Please see the attached ${noteLob} Policy Checklist.`;
+  preview.textContent = `See attached ${noteLob} Policy Checklist.`;
   preview.style.display = 'block';
   copyBtn.style.display = 'inline-block';
 });

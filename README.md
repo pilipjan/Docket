@@ -17,7 +17,7 @@ The main tool. Creates a job folder and renames your checklist Excel + policy do
 - "Start next policy" resets the form for the next job without a page reload
 - Generates two ready-to-paste notes for your checklist:
   - **Starting the checklist** — which documents were available / not available
-  - **Finishing the checklist** — the standard "Please see the attached [LOB] Policy Checklist" reminder line for whichever LOB you're on
+  - **Finishing the checklist** — the standard "See attached [LOB] Policy Checklist" reminder line for whichever LOB you're on
 
 **Privacy:** this tool never opens, reads, or analyzes the contents of any file. It only takes the file you select and writes it to disk under a new name.
 
