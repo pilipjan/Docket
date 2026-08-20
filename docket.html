@@ -28,6 +28,9 @@
     --tint-warn-bg:#fdf3ea;
     --tint-warn-border:#eacba4;
     --tint-warn-text:#7a4a1c;
+    --tint-start-bg:#eaf1fb;
+    --tint-start-border:#a9c6ea;
+    --tint-start-text:#1f4e85;
     --tint-result-bg:#2b2f33;
     --tint-result-border:#4a5058;
     --tint-result-text:#f0f1f2;
@@ -47,6 +50,9 @@
     --tint-warn-bg:#3a2c1c;
     --tint-warn-border:#5c4527;
     --tint-warn-text:#e8b788;
+    --tint-start-bg:#1c2b3a;
+    --tint-start-border:#345173;
+    --tint-start-text:#8fb8e8;
     --tint-result-bg:#0e1013;
     --tint-result-border:#3a4149;
     --tint-result-text:#e8e6e1;
@@ -66,6 +72,9 @@
     --tint-warn-bg:#ecdfd3;
     --tint-warn-border:#cbb392;
     --tint-warn-text:#5c4023;
+    --tint-start-bg:#dbe4ec;
+    --tint-start-border:#9fb4c4;
+    --tint-start-text:#20415c;
     --tint-result-bg:#3a3f44;
     --tint-result-border:#585f66;
     --tint-result-text:#f2f3f4;
@@ -330,24 +339,20 @@
   </section>
   </div>
 
-  <section class="card" id="noteCard" style="border: 2px solid var(--accent); background: var(--tint-warn-bg);">
-    <h2 style="color: var(--tint-warn-text);">⚠️ 5 · Important Notes — required for every policy</h2>
+  <section class="card" id="availNoteCard" style="border: 2px solid var(--tint-start-border); background: var(--tint-start-bg);">
+    <h2 style="color: var(--tint-start-text);">🔵 5 · Start of process — document availability</h2>
+    <p style="font-size:0.82rem; color:var(--muted); margin-top:0;">Lists which of the six document types you saved, and which weren't available.</p>
+    <button class="ghost" id="genAvailNoteBtn">Generate note</button>
+    <div class="importantNote" id="availNotePreview" style="display:none;"></div>
+    <button class="ghost" id="copyAvailNoteBtn" style="display:none; margin-top:10px;">Copy to clipboard</button>
+  </section>
 
-    <div style="margin-bottom:20px; padding-bottom:18px; border-bottom:1px solid var(--tint-warn-border);">
-      <strong style="font-size:0.85rem; color: var(--tint-warn-text);">📌 When starting the checklist — document availability</strong>
-      <p style="font-size:0.82rem; color:var(--muted); margin:4px 0 10px;">Lists which of the six document types you saved, and which weren't available.</p>
-      <button class="ghost" id="genAvailNoteBtn">Generate note</button>
-      <div class="importantNote" id="availNotePreview" style="display:none;"></div>
-      <button class="ghost" id="copyAvailNoteBtn" style="display:none; margin-top:10px;">Copy to clipboard</button>
-    </div>
-
-    <div>
-      <strong style="font-size:0.85rem; color: var(--tint-warn-text);">📌 When finished — attaching the checklist</strong>
-      <p style="font-size:0.82rem; color:var(--muted); margin:4px 0 10px;">The standard reminder line for the LOB you're currently working on.</p>
-      <button class="ghost" id="genAttachNoteBtn">Generate note</button>
-      <div class="importantNote" id="attachNotePreview" style="display:none;"></div>
-      <button class="ghost" id="copyAttachNoteBtn" style="display:none; margin-top:10px;">Copy to clipboard</button>
-    </div>
+  <section class="card" id="attachNoteCard" style="border: 2px solid var(--accent); background: var(--tint-warn-bg);">
+    <h2 style="color: var(--tint-warn-text);">🟠 6 · End of process — attaching the checklist</h2>
+    <p style="font-size:0.82rem; color:var(--muted); margin-top:0;">The standard reminder line for the LOB you're currently working on.</p>
+    <button class="ghost" id="genAttachNoteBtn">Generate note</button>
+    <div class="importantNote" id="attachNotePreview" style="display:none;"></div>
+    <button class="ghost" id="copyAttachNoteBtn" style="display:none; margin-top:10px;">Copy to clipboard</button>
   </section>
 
   <section class="card" style="background:transparent; border:none; padding:0;">
@@ -604,8 +609,6 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
   document.getElementById('excelCard').style.pointerEvents = 'none';
   document.getElementById('docsCard').style.opacity = '0.5';
   document.getElementById('docsCard').style.pointerEvents = 'none';
-  document.getElementById('noteCard').style.opacity = '0.5';
-  document.getElementById('noteCard').style.pointerEvents = 'none';
   document.getElementById('availNotePreview').style.display = 'none';
   document.getElementById('attachNotePreview').style.display = 'none';
   document.getElementById('copyAvailNoteBtn').style.display = 'none';
@@ -642,8 +645,6 @@ document.getElementById('pickFolderBtn').addEventListener('click', async ()=>{
     checkRememberedExcel();
     document.getElementById('docsCard').style.opacity = '1';
     document.getElementById('docsCard').style.pointerEvents = 'auto';
-    document.getElementById('noteCard').style.opacity = '1';
-    document.getElementById('noteCard').style.pointerEvents = 'auto';
     logMsg(`Created/opened folder "${tag}"`);
   }catch(e){
     if(e.name !== 'AbortError') logMsg('Could not create folder: ' + e.message, true);
