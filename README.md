@@ -21,16 +21,13 @@ The main tool. Creates a job folder and renames your checklist Excel + policy do
 
 **Privacy:** this tool never opens, reads, or analyzes the contents of any file. It only takes the file you select and writes it to disk under a new name.
 
-### 📊 Forms Checker (`forms-checker.html`)
-Compares Previous vs Current forms & endorsements schedules and flags additions, removals, edition changes, and possible typos. Fully offline — pasted data is never uploaded. Linked from Docket's header.
-
 ## Requirements
 
 Both tools use the browser's **File System Access API**, which needs a **Chromium-based desktop browser** — **Chrome or Edge**. Firefox and Safari are not supported for the folder/file-saving features.
 
 ## Running it
 
-- **Locally:** download the repo, open `index.html` (Docket) or `forms-checker.html` directly in Chrome/Edge.
+- **Locally:** download the repo, open `index.html` (Docket) directly in Chrome/Edge.
 - **Hosted:** enable GitHub Pages on this repo (see below) and open the pages from anywhere.
 
 ## GitHub Pages setup
@@ -40,7 +37,6 @@ Both tools use the browser's **File System Access API**, which needs a **Chromiu
 3. Set **Branch** to `main` and folder to `/ (root)`, then **Save**.
 4. After a minute, your site will be live at:
    `https://pilipjan.github.io/docket/` → Docket (main tool)
-   `https://pilipjan.github.io/docket/forms-checker.html` → Forms Checker
 5. The File System Access API requires a secure context — GitHub Pages serves over HTTPS, so this works automatically.
 
 ## Notes
