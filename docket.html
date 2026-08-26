@@ -306,6 +306,7 @@
 
     <label style="display:block; margin:14px 0 6px;">Document filenames — check which ones you have</label>
     <div id="manualDocsList"></div>
+    <button class="primary" id="copyAllDocsBtn" style="margin-top:6px;">Copy all checked names</button>
   </section>
 
   <div id="autoSection" style="display:none;">
@@ -538,6 +539,23 @@ function renderManualNames(){
     list.appendChild(row);
   });
 }
+
+document.getElementById('copyAllDocsBtn').addEventListener('click', async ()=>{
+  const hasBasics = insured && policyNum && lob;
+  if(!hasBasics){ logMsg('Fill in Insured Name, Policy Number, and LOB first', true); return; }
+  const checked = DOC_TYPES.filter(t => {
+    const cb = document.getElementById('manualDoc_' + t);
+    return cb && cb.checked;
+  });
+  if(checked.length === 0){ logMsg('No documents checked yet', true); return; }
+  const names = checked.map(t => docName(t, '.pdf')).join('\n');
+  try{
+    await navigator.clipboard.writeText(names);
+    logMsg(`Copied ${checked.length} document name(s) to clipboard`);
+  }catch(e){
+    logMsg('Could not copy automatically — select the text and copy manually', true);
+  }
+});
 
 document.getElementById('copyJobTagBtn').addEventListener('click', async ()=>{
   const text = document.getElementById('manualJobTag').textContent;
