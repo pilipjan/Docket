@@ -558,12 +558,14 @@ document.getElementById('copyAllDocsBtn').addEventListener('click', async ()=>{
 });
 
 document.getElementById('copyJobTagBtn').addEventListener('click', async ()=>{
+  if(!confirm(`Confirm before copying:\n\nLOB: ${lob || '(not selected)'}\nInsured: ${insured}\n\nIs this the correct LOB?`)) return;
   const text = document.getElementById('manualJobTag').textContent;
   try{ await navigator.clipboard.writeText(text); logMsg('Job tag copied to clipboard'); }
   catch(e){ logMsg('Could not copy automatically — select the text and copy manually', true); }
 });
 
 document.getElementById('copyExcelNameBtn').addEventListener('click', async ()=>{
+  if(!confirm(`Confirm before copying:\n\nLOB: ${lob || '(not selected)'}\nInsured: ${insured}\n\nIs this the correct LOB?`)) return;
   const text = document.getElementById('manualExcelName').textContent;
   try{ await navigator.clipboard.writeText(text); logMsg('Excel filename copied to clipboard'); }
   catch(e){ logMsg('Could not copy automatically — select the text and copy manually', true); }
