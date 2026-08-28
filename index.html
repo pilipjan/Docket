@@ -923,6 +923,7 @@ document.getElementById('genAttachNoteBtn').addEventListener('click', ()=>{
 });
 
 document.getElementById('copyAttachNoteBtn').addEventListener('click', async ()=>{
+  if(!confirm(`Final check before copying:\n\nLOB: ${lob || '(not selected)'}\nInsured: ${insured}\n\nThis is going into the checklist — is the LOB correct?`)) return;
   const text = document.getElementById('attachNotePreview').textContent;
   try{ await navigator.clipboard.writeText(text); logMsg('Attachment note copied to clipboard'); }
   catch(e){ logMsg('Could not copy automatically — select the text and copy manually', true); }
